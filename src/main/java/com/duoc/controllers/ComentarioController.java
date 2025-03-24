@@ -1,6 +1,8 @@
 package com.duoc.controllers;
 
 import com.duoc.dto.ComentarioDTO;
+import com.duoc.dto.EliminarComentarioDTO;
+import com.duoc.dto.EliminarPublicacionDTO;
 import com.duoc.services.ComentarioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -32,17 +34,19 @@ public class ComentarioController {
 
     @PutMapping
     public ResponseEntity<ComentarioDTO> modificarComentario(@RequestBody ComentarioDTO comentarioDTO) {
-        return null;
+        ComentarioDTO comentarioModificado = comentarioService.modificarComentario(comentarioDTO);
+        return new ResponseEntity<>(comentarioModificado, HttpStatus.CREATED);
     }
 
-    @DeleteMapping("/{id-comentario}")
-    public void eliminarComentarioById(@PathVariable("id-comentario") Long idComentario) {
+    @DeleteMapping
+    public ResponseEntity<EliminarComentarioDTO> eliminarComentarioById(
+            @RequestParam("id-comentario") Long idComentario,
+            @RequestParam("id-usuario") Long idUsuario) {
 
+        comentarioService.eliminarComentarioById(idComentario, idUsuario);
+        EliminarComentarioDTO eliminarComentarioDTO = new EliminarComentarioDTO("Comentario eliminado exitosamente con ID: " + idComentario + " con ID usuario: " + idUsuario);
+
+        return ResponseEntity.ok(eliminarComentarioDTO);
     }
-
-    @DeleteMapping("/{id-publicacion}")
-    public void eliminarComentariosPorPublicacion(@PathVariable("id-comentario") Long idPublicacion) {
-    }
-
 
 }

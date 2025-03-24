@@ -1,5 +1,6 @@
 package com.duoc.controllers;
 
+import com.duoc.dto.EliminarPublicacionDTO;
 import com.duoc.dto.PublicacionDTO;
 import com.duoc.services.PublicacionService;
 import jakarta.validation.Valid;
@@ -44,13 +45,14 @@ public class PublicacionController {
         return ResponseEntity.ok(publicacionActualizada);
     }
 
-    @DeleteMapping("/{id-publicacion}/{id-usuario}")
-    public ResponseEntity<Void> eliminarPublicacionById(
-            @PathVariable("id-publicacion") Long idPublicacion,
-            @PathVariable("id-usuario") Long idUsuario
+    @DeleteMapping
+    public ResponseEntity<EliminarPublicacionDTO> eliminarPublicacionById(
+            @RequestParam("id-publicacion") Long idPublicacion,
+            @RequestParam("id-usuario") Long idUsuario
     ) {
         publicacionService.eliminarPublicacionById(idPublicacion, idUsuario);
-        return ResponseEntity.noContent().build();
+        EliminarPublicacionDTO eliminarPublicacionDTO = new EliminarPublicacionDTO("Publicacion eliminada con ID: " + idPublicacion);
+        return ResponseEntity.ok(eliminarPublicacionDTO);
     }
 
 }

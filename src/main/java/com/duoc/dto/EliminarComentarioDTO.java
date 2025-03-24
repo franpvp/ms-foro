@@ -7,7 +7,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor
-public class EliminarPublicacionDTO {
+public class EliminarComentarioDTO {
 
-    private String mensajeEliminarPublicacion;
+    private String eliminarMensajeComentario;
 }

@@ -2,23 +2,27 @@ package com.duoc.services;
 
 import com.duoc.adapter.controller.UsuarioClient;
 import com.duoc.dto.PublicacionDTO;
+import com.duoc.dto.UsuarioDTO;
+import com.duoc.enums.UserRole;
 import com.duoc.exceptions.IllegalNumberException;
 import com.duoc.exceptions.PublicacionNotFoundException;
-import com.duoc.exceptions.UnauthorizedException;
 import com.duoc.exceptions.UsuarioNotFoundException;
 import com.duoc.mapper.PublicacionMapper;
 import com.duoc.model.PublicacionEntity;
 import com.duoc.repositories.PublicacionRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-public class PublicacionServiceImpl implements PublicacionService{
+public class PublicacionServiceImpl implements PublicacionService {
 
     private final PublicacionRepository publicacionRepository;
     private final PublicacionMapper publicacionMapper;
@@ -29,8 +33,8 @@ public class PublicacionServiceImpl implements PublicacionService{
     public List<PublicacionDTO> getPublicaciones() {
         List<PublicacionEntity> publicaciones = publicacionRepository.findAll();
 
-        if(publicaciones.isEmpty()) {
-            throw new PublicacionNotFoundException("No hay publicaciones registradas");
+        if (publicaciones.isEmpty()) {
+            throw new PublicacionNotFoundException("No hay publicaciones registradas en la base de datos.");
         }
 
         return publicaciones.stream()
@@ -40,29 +44,29 @@ public class PublicacionServiceImpl implements PublicacionService{
 
     @Override
     public PublicacionDTO getPublicacionById(Long idPublicacion) {
-
-        if (idPublicacion <= 0) {
-            throw new IllegalNumberException("Los ID no pueden ser negativos o cero.");
+        if (idPublicacion == null || idPublicacion <= 0) {
+            throw new IllegalNumberException(
+                    String.format("El ID de la publicación no puede ser nulo, negativo o cero. Valor recibido: %d", idPublicacion));
         }
 
         PublicacionEntity publicacionEntity = publicacionRepository.findById(idPublicacion)
-                .orElseThrow(() -> new PublicacionNotFoundException("Publicación no encontrada"));
-        return publicacionMapper.publicacionEntityToDto(publicacionEntity);
+                .orElseThrow(() -> new PublicacionNotFoundException(
+                        String.format("No se encontró ninguna publicación con el ID: %d", idPublicacion)));
 
+        return publicacionMapper.publicacionEntityToDto(publicacionEntity);
     }
 
     @Override
     public PublicacionDTO crearPublicacion(PublicacionDTO publicacion) {
-        // Llamada al microservicio de usuarios para validar si existe
-        ResponseEntity<Boolean> response = usuarioClient.usuarioExiste(publicacion.getIdUsuario());
+        ResponseEntity<UsuarioDTO> response = usuarioClient.obtenerUsuario(publicacion.getIdUsuario());
 
-        if (response.getBody() == null || !response.getBody()) {
-            throw new UsuarioNotFoundException("El usuario con ID " + publicacion.getIdUsuario() + " no existe.");
+        if (response.getBody() == null) {
+            throw new UsuarioNotFoundException(
+                    String.format("No se encontró un usuario con el ID: %d. No se puede crear la publicación.", publicacion.getIdUsuario()));
         }
 
         publicacion.setFechaCreacion(LocalDateTime.now());
 
-        // Transformar de Entity a DTO
         PublicacionEntity publicacionEntity = publicacionMapper.publicacionDtoToEntity(publicacion);
         PublicacionEntity publicacionGuardada = publicacionRepository.save(publicacionEntity);
 
@@ -71,48 +75,55 @@ public class PublicacionServiceImpl implements PublicacionService{
 
     @Override
     public PublicacionDTO modificarPublicacion(PublicacionDTO publicacionDTO) {
+        UsuarioDTO usuarioDTO = Optional.ofNullable(usuarioClient.obtenerUsuario(publicacionDTO.getIdUsuario()).getBody())
+                .orElseThrow(() -> new UsuarioNotFoundException(
+                        String.format("El usuario con ID %d no existe. No se puede modificar la publicación.", publicacionDTO.getIdUsuario())));
 
-        ResponseEntity<Boolean> response = usuarioClient.usuarioExiste(publicacionDTO.getIdUsuario());
+        PublicacionEntity publicacion;
 
-        if (response.getBody() == null || !response.getBody()) {
-            throw new UsuarioNotFoundException("El usuario con ID " + publicacionDTO.getIdUsuario() + " no existe.");
+        if (UserRole.ADMIN.equals(usuarioDTO.getRole()) || UserRole.MODERATOR.equals(usuarioDTO.getRole())) {
+            publicacion = publicacionRepository.findById(publicacionDTO.getIdPublicacion())
+                    .orElseThrow(() -> new PublicacionNotFoundException(
+                            String.format("No se encontró la publicación con ID: %d", publicacionDTO.getIdPublicacion())));
+        } else {
+            publicacion = publicacionRepository.findByIdPublicacionAndIdUsuario(publicacionDTO.getIdPublicacion(), publicacionDTO.getIdUsuario())
+                    .orElseThrow(() -> new PublicacionNotFoundException(
+                            String.format("El usuario con ID %d no posee ninguna publicación con ID: %d",
+                                    publicacionDTO.getIdUsuario(), publicacionDTO.getIdPublicacion())));
         }
 
-        // Buscar la publicación en la base de datos
-        PublicacionEntity publicacion = publicacionRepository.findByIdPublicacionAndIdUsuario(publicacionDTO.getIdPublicacion(), publicacionDTO.getIdUsuario())
-                .orElseThrow(() -> new PublicacionNotFoundException("No se encontró la publicación con ID " + publicacionDTO.getIdPublicacion()));
-
-        // Actualizar los valores de la publicación
         publicacion.setTitulo(publicacionDTO.getTitulo());
         publicacion.setContenido(publicacionDTO.getContenido());
-        publicacion.setFechaCreacion(LocalDateTime.now());
 
-        // Guardar la publicación modificada
-        PublicacionEntity publicacionActualizada = publicacionRepository.save(publicacion);
-
-        // Convertir a DTO
-        return publicacionMapper.publicacionEntityToDto(publicacionActualizada);
+        return publicacionMapper.publicacionEntityToDto(publicacionRepository.save(publicacion));
     }
 
     @Override
     public void eliminarPublicacionById(Long idPublicacion, Long idUsuario) {
-        // Validar si el usuario existe en el microservicio de usuarios (CREAR METODO PARA VALIDAR USUARIO)
-        ResponseEntity<Boolean> response = usuarioClient.usuarioExiste(idUsuario);
+        ResponseEntity<UsuarioDTO> response = usuarioClient.obtenerUsuario(idUsuario);
 
-        // Si es Falsom el usuario no existe
-        if (response.getBody() == null || !response.getBody() || Boolean.FALSE.equals(response)) {
-            throw new UsuarioNotFoundException("El usuario con ID " + idUsuario + " no existe.");
+        if (response.getBody() == null) {
+            throw new UsuarioNotFoundException(
+                    String.format("El usuario con ID %d no existe. No se puede eliminar la publicación.", idUsuario));
         }
 
-        // Si el usuario existe, proceder con la eliminación de la publicación
         PublicacionEntity publicacion = publicacionRepository.findById(idPublicacion)
-                .orElseThrow(() -> new PublicacionNotFoundException("Publicación no encontrada"));
+                .orElseThrow(() -> new PublicacionNotFoundException(
+                        String.format("No se encontró ninguna publicación con el ID: %d", idPublicacion)));
 
-        // Eliminar todos los comentarios antes de eliminar una publicación
-        comentarioService.eliminarComentariosPorPublicacion(idPublicacion);
-        // Eliminar publicación
-        publicacionRepository.delete(publicacion);
+        UsuarioDTO usuarioDTO = response.getBody();
+
+        if (UserRole.ADMIN.equals(usuarioDTO.getRole()) || UserRole.MODERATOR.equals(usuarioDTO.getRole())) {
+            comentarioService.eliminarComentariosPorPublicacion(idPublicacion);
+            publicacionRepository.delete(publicacion);
+            log.info(String.format("Publicación con ID %d eliminada correctamente por usuario ADMIN/MODERATOR con ID %d",
+                    idPublicacion, idUsuario));
+        } else {
+            comentarioService.eliminarComentarioPorPublicacionYUsuario(idPublicacion, usuarioDTO);
+            PublicacionEntity publicacionEntity = publicacionRepository.findByIdPublicacionAndIdUsuario(idPublicacion, usuarioDTO.getId())
+                    .orElseThrow(() -> new PublicacionNotFoundException(String.format("Intento fallido de eliminar publicación con ID %d. El usuario con ID %d no tiene permisos.",
+                            idPublicacion, usuarioDTO.getId())));
+            publicacionRepository.delete(publicacionEntity);
+        }
     }
-
-
 }
