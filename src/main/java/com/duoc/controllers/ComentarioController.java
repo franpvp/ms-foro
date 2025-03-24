@@ -30,7 +30,7 @@ public class ComentarioController {
 
     @PostMapping
     public ResponseEntity<ComentarioDTO> crearComentario(
-            @NotNull @Valid @RequestBody ComentarioDTO comentarioDTO
+            @RequestBody ComentarioDTO comentarioDTO
     ) {
         ComentarioDTO comentarioCreado = comentarioService.crearComentario(comentarioDTO);
 

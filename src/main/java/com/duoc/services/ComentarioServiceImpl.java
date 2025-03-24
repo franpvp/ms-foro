@@ -40,8 +40,19 @@ public class ComentarioServiceImpl implements ComentarioService{
     @Override
     public ComentarioDTO crearComentario(ComentarioDTO comentarioDTO) {
 
-        if (comentarioDTO.getIdPublicacion() <= 0 && comentarioDTO.getIdUsuario() <= 0) {
-            throw new IllegalNumberException("El ID debe ser positivo y no nulo");
+        if (comentarioDTO.getIdPublicacion() == null || comentarioDTO.getIdPublicacion() <= 0) {
+            throw new IllegalNumberException("El ID de la publicación debe ser positivo y no nulo");
+        }
+
+        if (comentarioDTO.getIdUsuario() == null || comentarioDTO.getIdUsuario() <= 0) {
+            throw new IllegalNumberException("El ID del usuario debe ser positivo y no nulo");
+        }
+
+        // Validar si el usuario del servicio externo existe
+        ResponseEntity<UsuarioDTO> response = usuarioClient.obtenerUsuario(comentarioDTO.getIdUsuario());
+
+        if (response == null || response.getStatusCode().isError() || response.getBody() == null) {
+            throw new UsuarioNotFoundException("El usuario con ID " + comentarioDTO.getIdUsuario() + " no existe o el servicio no está disponible.");
         }
 
         ComentarioEntity comentarioEntity = comentarioMapper.comentarioDtoToEntity(comentarioDTO);
