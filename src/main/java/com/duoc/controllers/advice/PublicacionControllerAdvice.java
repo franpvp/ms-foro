@@ -4,6 +4,8 @@ import com.duoc.dto.ErrorResponse;
 import com.duoc.exceptions.ComentarioNotFoundException;
 import com.duoc.exceptions.IllegalNumberException;
 import com.duoc.exceptions.PublicacionNotFoundException;
+import com.duoc.exceptions.UsuarioNotFoundException;
+import feign.FeignException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -34,6 +36,22 @@ public class PublicacionControllerAdvice {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse manejarPublicacionNoEncontrado(ComentarioNotFoundException ex){
         log.error("Comentario no encontrado: {}", ex.getMessage());
+
+        return new ErrorResponse(HttpStatus.NOT_FOUND.value(), ex.getMessage());
+    }
+
+    @ExceptionHandler(UsuarioNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse manejarUsuarioNoEncontrado(UsuarioNotFoundException ex){
+        log.error("Usuario no encontrado: {}", ex.getMessage());
+
+        return new ErrorResponse(HttpStatus.NOT_FOUND.value(), ex.getMessage());
+    }
+
+    @ExceptionHandler(FeignException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse manejarErrorServicioExterno(FeignException ex){
+        log.error("Error en servicio externo: {}", ex.getMessage());
 
         return new ErrorResponse(HttpStatus.NOT_FOUND.value(), ex.getMessage());
     }
