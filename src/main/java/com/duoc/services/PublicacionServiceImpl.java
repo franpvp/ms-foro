@@ -1,11 +1,13 @@
 package com.duoc.services;
 
+import com.duoc.adapter.controller.AuthClient;
 import com.duoc.adapter.controller.UsuarioClient;
 import com.duoc.dto.PublicacionDTO;
 import com.duoc.dto.UsuarioDTO;
 import com.duoc.enums.UserRole;
 import com.duoc.exceptions.IllegalNumberException;
 import com.duoc.exceptions.PublicacionNotFoundException;
+import com.duoc.exceptions.UsuarioNoAutenticadoException;
 import com.duoc.exceptions.UsuarioNotFoundException;
 import com.duoc.mapper.PublicacionMapper;
 import com.duoc.model.PublicacionEntity;
@@ -28,6 +30,7 @@ public class PublicacionServiceImpl implements PublicacionService {
     private final PublicacionMapper publicacionMapper;
     private final UsuarioClient usuarioClient;
     private final ComentarioService comentarioService;
+    private final AuthClient authClient;
 
     @Override
     public List<PublicacionDTO> getPublicaciones() {
@@ -57,17 +60,19 @@ public class PublicacionServiceImpl implements PublicacionService {
     }
 
     @Override
-    public PublicacionDTO crearPublicacion(PublicacionDTO publicacion) {
-        ResponseEntity<UsuarioDTO> response = usuarioClient.obtenerUsuario(publicacion.getIdUsuario());
+    public PublicacionDTO crearPublicacion(PublicacionDTO publicacionDTO) {
+        //Método para validar si el usuario está autenticado
+        validarUsuarioLogeado(publicacionDTO.getIdUsuario());
+        ResponseEntity<UsuarioDTO> response = usuarioClient.obtenerUsuario(publicacionDTO.getIdUsuario());
 
         if (response.getBody() == null) {
             throw new UsuarioNotFoundException(
-                    String.format("No se encontró un usuario con el ID: %d. No se puede crear la publicación.", publicacion.getIdUsuario()));
+                    String.format("No se encontró un usuario con el ID: %d. No se puede crear la publicación.", publicacionDTO.getIdUsuario()));
         }
 
-        publicacion.setFechaCreacion(LocalDateTime.now());
+        publicacionDTO.setFechaCreacion(LocalDateTime.now());
 
-        PublicacionEntity publicacionEntity = publicacionMapper.publicacionDtoToEntity(publicacion);
+        PublicacionEntity publicacionEntity = publicacionMapper.publicacionDtoToEntity(publicacionDTO);
         PublicacionEntity publicacionGuardada = publicacionRepository.save(publicacionEntity);
 
         return publicacionMapper.publicacionEntityToDto(publicacionGuardada);
@@ -75,6 +80,9 @@ public class PublicacionServiceImpl implements PublicacionService {
 
     @Override
     public PublicacionDTO modificarPublicacion(PublicacionDTO publicacionDTO) {
+
+        validarUsuarioLogeado(publicacionDTO.getIdUsuario());
+
         UsuarioDTO usuarioDTO = Optional.ofNullable(usuarioClient.obtenerUsuario(publicacionDTO.getIdUsuario()).getBody())
                 .orElseThrow(() -> new UsuarioNotFoundException(
                         String.format("El usuario con ID %d no existe. No se puede modificar la publicación.", publicacionDTO.getIdUsuario())));
@@ -100,6 +108,7 @@ public class PublicacionServiceImpl implements PublicacionService {
 
     @Override
     public void eliminarPublicacionById(Long idPublicacion, Long idUsuario) {
+        validarUsuarioLogeado(idUsuario);
         ResponseEntity<UsuarioDTO> response = usuarioClient.obtenerUsuario(idUsuario);
 
         if (response.getBody() == null) {
@@ -124,6 +133,16 @@ public class PublicacionServiceImpl implements PublicacionService {
                     .orElseThrow(() -> new PublicacionNotFoundException(String.format("Intento fallido de eliminar publicación con ID %d. El usuario con ID %d no tiene permisos.",
                             idPublicacion, usuarioDTO.getId())));
             publicacionRepository.delete(publicacionEntity);
+        }
+    }
+
+    /**
+     * Método para validar si el usuario está logeado antes de realizar acciones.
+     */
+    private void validarUsuarioLogeado(Long idUsuario) {
+        boolean isLoggedIn = Optional.ofNullable(authClient.verificarEstadoUsuario(idUsuario).getBody()).orElse(false);
+        if (!isLoggedIn) {
+            throw new UsuarioNoAutenticadoException(String.format("El usuario con ID %d no ha iniciado sesión.", idUsuario));
         }
     }
 }

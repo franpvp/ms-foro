@@ -1,10 +1,7 @@
 package com.duoc.controllers.advice;
 
 import com.duoc.dto.ErrorResponse;
-import com.duoc.exceptions.ComentarioNotFoundException;
-import com.duoc.exceptions.IllegalNumberException;
-import com.duoc.exceptions.PublicacionNotFoundException;
-import com.duoc.exceptions.UsuarioNotFoundException;
+import com.duoc.exceptions.*;
 import feign.FeignException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -52,6 +49,14 @@ public class PublicacionControllerAdvice {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse manejarErrorServicioExterno(FeignException ex){
         log.error("Error en servicio externo: {}", ex.getMessage());
+
+        return new ErrorResponse(HttpStatus.NOT_FOUND.value(), ex.getMessage());
+    }
+
+    @ExceptionHandler(UsuarioNoAutenticadoException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse manejarUsuarioNoAutenticado(UsuarioNoAutenticadoException ex){
+        log.error("El usuario no está autenticado : {}", ex.getMessage());
 
         return new ErrorResponse(HttpStatus.NOT_FOUND.value(), ex.getMessage());
     }
