@@ -1,11 +1,13 @@
 package com.duoc.services;
 
+import com.duoc.adapter.controller.AuthClient;
 import com.duoc.adapter.controller.UsuarioClient;
 import com.duoc.dto.ComentarioDTO;
 import com.duoc.dto.UsuarioDTO;
 import com.duoc.enums.UserRole;
 import com.duoc.exceptions.ComentarioNotFoundException;
 import com.duoc.exceptions.IllegalNumberException;
+import com.duoc.exceptions.UsuarioNoAutenticadoException;
 import com.duoc.exceptions.UsuarioNotFoundException;
 import com.duoc.mapper.ComentarioMapper;
 import com.duoc.model.ComentarioEntity;
@@ -26,6 +28,7 @@ public class ComentarioServiceImpl implements ComentarioService{
     private final ComentarioRepository comentarioRepository;
     private final ComentarioMapper comentarioMapper;
     private final UsuarioClient usuarioClient;
+    private final AuthClient authClient;
 
     @Override
     public List<ComentarioDTO> getComentariosByIdPublicacion(Long idPublicacion) {
@@ -39,6 +42,8 @@ public class ComentarioServiceImpl implements ComentarioService{
 
     @Override
     public ComentarioDTO crearComentario(ComentarioDTO comentarioDTO) {
+
+        validarUsuarioLogeado(comentarioDTO.getIdUsuario());
 
         if (comentarioDTO.getIdPublicacion() == null || comentarioDTO.getIdPublicacion() <= 0) {
             throw new IllegalNumberException("El ID de la publicación debe ser positivo y no nulo");
@@ -63,6 +68,8 @@ public class ComentarioServiceImpl implements ComentarioService{
 
     @Override
     public ComentarioDTO modificarComentario(ComentarioDTO comentarioDTO) {
+
+        validarUsuarioLogeado(comentarioDTO.getIdUsuario());
 
         if (comentarioDTO.getIdPublicacion() <= 0 || comentarioDTO.getIdUsuario() <= 0) {
             throw new IllegalNumberException("El ID debe ser positivo y no nulo");
@@ -94,6 +101,7 @@ public class ComentarioServiceImpl implements ComentarioService{
     @Override
     public void eliminarComentarioById(Long idComentario, Long idUsuario) {
 
+        validarUsuarioLogeado(idUsuario);
         ResponseEntity<UsuarioDTO> response = usuarioClient.obtenerUsuario(idUsuario);
 
         if (response.getBody() == null) {
@@ -133,6 +141,8 @@ public class ComentarioServiceImpl implements ComentarioService{
 
     @Override
     public void eliminarComentarioPorPublicacionYUsuario(Long idPublicacion, UsuarioDTO usuarioDTO) {
+
+        validarUsuarioLogeado(usuarioDTO.getId());
         if (idPublicacion <= 0) {
             throw new IllegalNumberException("El ID debe ser positivo y no nulo");
         }
@@ -150,5 +160,12 @@ public class ComentarioServiceImpl implements ComentarioService{
             return;
         }
         comentarioRepository.deleteAll(comentarios);
+    }
+
+    private void validarUsuarioLogeado(Long idUsuario) {
+        boolean isLoggedIn = Optional.ofNullable(authClient.verificarEstadoUsuario(idUsuario).getBody()).orElse(false);
+        if (!isLoggedIn) {
+            throw new UsuarioNoAutenticadoException(String.format("El usuario con ID %d no ha iniciado sesión.", idUsuario));
+        }
     }
 }
