@@ -152,7 +152,7 @@ public class ComentarioServiceImpl implements ComentarioService{
         if (UserRole.ADMIN.equals(usuarioDTO.getRole()) || UserRole.MODERATOR.equals(usuarioDTO.getRole())) {
             comentarios = comentarioRepository.findAllByIdPublicacion(idPublicacion).orElseGet(List::of);
         } else {
-            comentarios = comentarioRepository.findAllByIdUsuario(usuarioDTO.getId()).orElseGet(List::of);
+            comentarios = comentarioRepository.findAllByIdUsuarioAndIdPublicacion(usuarioDTO.getId(),idPublicacion).orElseGet(List::of);
         }
 
         if (comentarios.isEmpty()) {

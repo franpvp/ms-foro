@@ -1,8 +1,6 @@
 package com.duoc.repositories;
 
-import com.duoc.dto.ComentarioDTO;
 import com.duoc.model.ComentarioEntity;
-import com.duoc.model.PublicacionEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -16,6 +14,6 @@ public interface ComentarioRepository extends JpaRepository<ComentarioEntity, Lo
     Optional<List<ComentarioEntity>> findAllByIdPublicacion(Long idPublicacion);
     Optional<ComentarioEntity> findByIdComentarioAndIdUsuario(Long idComentario, Long idUsuario);
 
-    Optional<List<ComentarioEntity>> findAllByIdUsuario(Long idUsuario);
+    Optional<List<ComentarioEntity>> findAllByIdUsuarioAndIdPublicacion(Long idUsuario, Long idPublicacion);
 
 }
