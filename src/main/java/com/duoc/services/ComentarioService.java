@@ -15,4 +15,8 @@ public interface ComentarioService {
     void eliminarComentarioById(Long idComentario, Long idUsuario);
     void eliminarComentariosPorPublicacion(Long idPublicacion);
     void eliminarComentarioPorPublicacionYUsuario(Long idPublicacion, UsuarioDTO usuarioDTO);
+
+    List<ComentarioDTO> getTodosLosComentarios();
+
+    ComentarioDTO obtenerComentarioPorId(Long id);
 }

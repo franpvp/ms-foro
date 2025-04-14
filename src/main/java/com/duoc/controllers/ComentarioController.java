@@ -57,4 +57,16 @@ public class ComentarioController {
         return ResponseEntity.ok(eliminarComentarioDTO);
     }
 
+    @GetMapping("/todos")
+    public ResponseEntity<List<ComentarioDTO>> getTodosLosComentarios() {
+        List<ComentarioDTO> comentarios = comentarioService.getTodosLosComentarios();
+        return ResponseEntity.ok(comentarios);
+    }
+
+    @GetMapping("/comentario/{id}")
+    public ResponseEntity<ComentarioDTO> obtenerComentarioPorId(@PathVariable("id") Long id) {
+        ComentarioDTO comentario = comentarioService.obtenerComentarioPorId(id);
+        return ResponseEntity.ok(comentario);
+    }
+
 }

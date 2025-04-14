@@ -162,6 +162,24 @@ public class ComentarioServiceImpl implements ComentarioService{
         comentarioRepository.deleteAll(comentarios);
     }
 
+    @Override
+    public List<ComentarioDTO> getTodosLosComentarios() {
+        List<ComentarioEntity> comentarios = comentarioRepository.findAll();
+        if(comentarios.isEmpty()){
+            throw new ComentarioNotFoundException("No hay comentarios registrados");
+        }
+        return comentarios.stream()
+                .map(comentarioMapper::comentarioEntityToDto)
+                .toList();
+    }
+
+    @Override
+    public ComentarioDTO obtenerComentarioPorId(Long id) {
+        ComentarioEntity comentario = comentarioRepository.findById(id)
+                .orElseThrow(() -> new ComentarioNotFoundException("Comentario no encontrado con ID: " + id));
+        return comentarioMapper.comentarioEntityToDto(comentario);
+    }
+
     private void validarUsuarioLogeado(Long idUsuario) {
         boolean isLoggedIn = Optional.ofNullable(authClient.verificarEstadoUsuario(idUsuario).getBody()).orElse(false);
         if (!isLoggedIn) {
