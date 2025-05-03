@@ -81,13 +81,13 @@ public class PublicacionServiceImpl implements PublicacionService {
     @Override
     public PublicacionDTO modificarPublicacion(PublicacionDTO publicacionDTO) {
 
+        PublicacionEntity publicacion;
+
         validarUsuarioLogeado(publicacionDTO.getIdUsuario());
 
         UsuarioDTO usuarioDTO = Optional.ofNullable(usuarioClient.obtenerUsuario(publicacionDTO.getIdUsuario()).getBody())
                 .orElseThrow(() -> new UsuarioNotFoundException(
                         String.format("El usuario con ID %d no existe. No se puede modificar la publicación.", publicacionDTO.getIdUsuario())));
-
-        PublicacionEntity publicacion;
 
         if (UserRole.ADMIN.equals(usuarioDTO.getRole()) || UserRole.MODERATOR.equals(usuarioDTO.getRole())) {
             publicacion = publicacionRepository.findById(publicacionDTO.getIdPublicacion())
@@ -101,6 +101,7 @@ public class PublicacionServiceImpl implements PublicacionService {
         }
 
         publicacion.setTitulo(publicacionDTO.getTitulo());
+        publicacion.setCategoria(publicacion.getCategoria());
         publicacion.setContenido(publicacionDTO.getContenido());
 
         return publicacionMapper.publicacionEntityToDto(publicacionRepository.save(publicacion));

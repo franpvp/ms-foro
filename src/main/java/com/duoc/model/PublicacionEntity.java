@@ -25,11 +25,14 @@ public class PublicacionEntity {
     @Column(name = "id_usuario", nullable = false)
     private Long idUsuario;
 
-    @Column(name = "titulo", nullable = false, length = 255)
+    @Column(name = "titulo", nullable = false, length = 50)
     private String titulo;
 
-    @Column(name = "contenido", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "contenido", nullable = false, columnDefinition = "TEXT", length = 100)
     private String contenido;
+
+    @Column(name = "categoria", nullable = false, length = 50)
+    private String categoria;
 
     @Column(name = "fecha_creacion", nullable = false)
     private LocalDateTime fechaCreacion;

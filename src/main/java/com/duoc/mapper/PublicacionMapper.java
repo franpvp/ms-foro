@@ -13,6 +13,7 @@ public class PublicacionMapper {
                 .idPublicacion(publicacionDTO.getIdPublicacion())
                 .idUsuario(publicacionDTO.getIdUsuario())
                 .titulo(publicacionDTO.getTitulo())
+                .categoria(publicacionDTO.getCategoria())
                 .contenido(publicacionDTO.getContenido())
                 .fechaCreacion(publicacionDTO.getFechaCreacion())
                 .build();
@@ -24,6 +25,7 @@ public class PublicacionMapper {
                 .idPublicacion(publicacionEntity.getIdPublicacion())
                 .idUsuario(publicacionEntity.getIdUsuario())
                 .titulo(publicacionEntity.getTitulo())
+                .categoria(publicacionEntity.getCategoria())
                 .contenido(publicacionEntity.getContenido())
                 .fechaCreacion(publicacionEntity.getFechaCreacion())
                 .build();
